@@ -26,12 +26,12 @@ public abstract class OpenAiCompatibleProvider : AiProvider
 
     public override Task<string> SendMessageAsync(string message, List<ChatMessage> history, CancellationToken ct)
     {
-        return WithKeyFallbackAsync((key, token) => SendInternalAsync(key, message, history, token), ct);
+        return WithKeyFallbackAsync((key, token) => SendInternalAsync(key, message, PrepareHistory(history), token), ct);
     }
 
     public override IAsyncEnumerable<string> StreamMessageAsync(string message, List<ChatMessage> history, CancellationToken ct)
     {
-        return WithKeyFallbackStreamAsync((key, token) => StreamInternalAsync(key, message, history, token), ct);
+        return WithKeyFallbackStreamAsync((key, token) => StreamInternalAsync(key, message, PrepareHistory(history), token), ct);
     }
 
     public override async Task<IReadOnlyList<string>> DiscoverModelsAsync(CancellationToken ct)
@@ -218,3 +218,4 @@ public abstract class OpenAiCompatibleProvider : AiProvider
         };
     }
 }
+

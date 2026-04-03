@@ -1,4 +1,4 @@
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
 using System.Text.Json;
 using AIConsoleApp.Infrastructure;
 using AIConsoleApp.Models;
@@ -154,3 +154,4 @@ public sealed class OllamaProvider : AiProvider
         };
     }
 }
+

@@ -14,9 +14,15 @@ public sealed class AppConfig
 
     public int MaxRetriesPerKey { get; set; } = 2;
 
+    public string CurrentSessionName { get; set; } = "default";
+
+    public string CurrentWorkingDirectory { get; set; } = ".";
+
     public Dictionary<string, List<ProviderKeyEntry>> ProviderKeys { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     public Dictionary<string, List<string>> DiscoveredModels { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    public Dictionary<string, ChatSession> Sessions { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     public List<ChatMessage> ChatHistory { get; set; } = new();
 
@@ -27,8 +33,11 @@ public sealed class AppConfig
         ActiveModel = string.IsNullOrWhiteSpace(ActiveModel) ? "gpt-5.1" : ActiveModel.Trim();
         RequestTimeoutSeconds = RequestTimeoutSeconds <= 0 ? 90 : RequestTimeoutSeconds;
         MaxRetriesPerKey = MaxRetriesPerKey < 0 ? 0 : MaxRetriesPerKey;
+        CurrentSessionName = string.IsNullOrWhiteSpace(CurrentSessionName) ? "default" : CurrentSessionName.Trim();
+        CurrentWorkingDirectory = string.IsNullOrWhiteSpace(CurrentWorkingDirectory) ? "." : CurrentWorkingDirectory.Trim();
         ProviderKeys ??= new Dictionary<string, List<ProviderKeyEntry>>(StringComparer.OrdinalIgnoreCase);
         DiscoveredModels ??= new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+        Sessions ??= new Dictionary<string, ChatSession>(StringComparer.OrdinalIgnoreCase);
         ChatHistory ??= new List<ChatMessage>();
 
         var normalized = new Dictionary<string, List<ProviderKeyEntry>>(StringComparer.OrdinalIgnoreCase);
@@ -69,9 +78,50 @@ public sealed class AppConfig
                     .OrderBy(static value => value, StringComparer.OrdinalIgnoreCase)
                     .ToList(),
                 StringComparer.OrdinalIgnoreCase);
+
         ChatHistory = ChatHistory
             .Where(static message => message is not null && !string.IsNullOrWhiteSpace(message.Role))
             .Select(static message => message.Clone())
             .ToList();
+
+        var normalizedSessions = new Dictionary<string, ChatSession>(StringComparer.OrdinalIgnoreCase);
+        foreach (var pair in Sessions)
+        {
+            var name = NormalizeSessionName(pair.Key);
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                continue;
+            }
+
+            var session = pair.Value ?? new ChatSession();
+            session.Name = name;
+            session.Messages = (session.Messages ?? new List<ChatMessage>())
+                .Where(static message => message is not null && !string.IsNullOrWhiteSpace(message.Role))
+                .Select(static message => message.Clone())
+                .ToList();
+            normalizedSessions[name] = session;
+        }
+
+        if (!normalizedSessions.ContainsKey(CurrentSessionName))
+        {
+            normalizedSessions[CurrentSessionName] = new ChatSession
+            {
+                Name = CurrentSessionName,
+                Messages = ChatHistory.Select(static message => message.Clone()).ToList()
+            };
+        }
+        else if (ChatHistory.Count > 0 && normalizedSessions[CurrentSessionName].Messages.Count == 0)
+        {
+            normalizedSessions[CurrentSessionName].Messages = ChatHistory.Select(static message => message.Clone()).ToList();
+        }
+
+        Sessions = normalizedSessions;
+        ChatHistory = Sessions[CurrentSessionName].Messages.Select(static message => message.Clone()).ToList();
+    }
+
+    public static string NormalizeSessionName(string? name)
+    {
+        return string.IsNullOrWhiteSpace(name) ? string.Empty : name.Trim();
     }
 }
+

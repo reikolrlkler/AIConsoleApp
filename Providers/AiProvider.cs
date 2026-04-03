@@ -7,6 +7,16 @@ namespace AIConsoleApp.Providers;
 
 public abstract class AiProvider
 {
+    private const string DefaultSystemPrompt = """
+You are an AI assistant accessed through a CLI application called AIConsoleApp (not a web browser).
+
+Be concise and practical.
+
+Do not mention AIConsoleApp or the environment unless it is directly relevant to the user's question.
+
+Do not add meta explanations about how you are running.
+""";
+
     protected AiProvider(
         string providerName,
         string model,
@@ -46,6 +56,26 @@ public abstract class AiProvider
     public virtual Task<IReadOnlyList<string>> DiscoverModelsAsync(CancellationToken ct)
     {
         return Task.FromResult<IReadOnlyList<string>>(Array.Empty<string>());
+    }
+
+    protected List<ChatMessage> PrepareHistory(List<ChatMessage> history)
+    {
+        var prepared = history.Select(static item => item.Clone()).ToList();
+        var hasSystemPrompt = prepared.Any(item =>
+            string.Equals(item.Role, "system", StringComparison.OrdinalIgnoreCase)
+            && string.Equals(item.Content.Trim(), DefaultSystemPrompt.Trim(), StringComparison.Ordinal));
+
+        if (!hasSystemPrompt)
+        {
+            prepared.Insert(0, new ChatMessage
+            {
+                Role = "system",
+                Content = DefaultSystemPrompt,
+                Timestamp = DateTimeOffset.UtcNow
+            });
+        }
+
+        return prepared;
     }
 
     protected async Task<T> WithKeyFallbackAsync<T>(

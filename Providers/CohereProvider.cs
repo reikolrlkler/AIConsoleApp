@@ -1,4 +1,4 @@
-using System.Net.Http.Headers;
+﻿using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using AIConsoleApp.Infrastructure;
@@ -18,12 +18,12 @@ public sealed class CohereProvider : AiProvider
 
     public override Task<string> SendMessageAsync(string message, List<ChatMessage> history, CancellationToken ct)
     {
-        return WithKeyFallbackAsync((key, token) => SendInternalAsync(key, message, history, token), ct);
+        return WithKeyFallbackAsync((key, token) => SendInternalAsync(key, message, PrepareHistory(history), token), ct);
     }
 
     public override IAsyncEnumerable<string> StreamMessageAsync(string message, List<ChatMessage> history, CancellationToken ct)
     {
-        return WithKeyFallbackStreamAsync((key, token) => StreamInternalAsync(key, message, history, token), ct);
+        return WithKeyFallbackStreamAsync((key, token) => StreamInternalAsync(key, message, PrepareHistory(history), token), ct);
     }
 
     private async Task<string> SendInternalAsync(string? key, string message, List<ChatMessage> history, CancellationToken ct)
@@ -143,3 +143,4 @@ public sealed class CohereProvider : AiProvider
         };
     }
 }
+
