@@ -1,4 +1,4 @@
-﻿using AIConsoleApp.Models;
+using AIConsoleApp.Models;
 using AIConsoleApp.Services;
 using Xunit;
 
@@ -25,6 +25,34 @@ public sealed class AiActionPlannerTests
             Assert.NotNull(result);
             Assert.True(Directory.Exists(Path.Combine(root, "demo")));
             Assert.Contains("Hello, world!", await File.ReadAllTextAsync(Path.Combine(root, "demo", "hello.py")));
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, true);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task TryExecuteAsync_ParsesJsonWrappedInExtraText()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "AIConsolePlannerTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var response = "Here is the plan: {\"requiresAction\":true,\"summary\":\"Created a folder.\",\"actions\":[{\"type\":\"mkdir\",\"path\":\"new-folder\"}]} done.";
+            var provider = new FakeProvider(response);
+            var history = new List<ChatMessage>();
+            var currentDirectory = root;
+            string Resolve(string rawPath) => Path.GetFullPath(Path.IsPathRooted(rawPath) ? rawPath : Path.Combine(root, rawPath));
+            void Update(string directory) => currentDirectory = directory;
+
+            var result = await AiActionPlanner.TryExecuteAsync("hi create folder", root, currentDirectory, history, provider, Resolve, Update, CancellationToken.None);
+
+            Assert.NotNull(result);
+            Assert.True(Directory.Exists(Path.Combine(root, "new-folder")));
         }
         finally
         {
@@ -64,4 +92,3 @@ public sealed class AiActionPlannerTests
         public Task ErrorAsync(string message, CancellationToken ct = default) => Task.CompletedTask;
     }
 }
-

@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using AIConsoleApp.Models;
 using AIConsoleApp.Providers;
 
@@ -54,21 +54,26 @@ public static class AiActionPlanner
     {
         return string.Join(Environment.NewLine,
             "You are a planning layer for a CLI coding assistant.",
-            "Decide whether the user's request should trigger local workspace actions instead of a normal chat response.",
+            "Your only job is to decide whether the user request should execute local workspace actions.",
             string.Empty,
             "Rules:",
             "- Only plan actions when the user clearly asks to create a folder, create a file, write content, or change directory.",
             "- Never use paths outside the workspace root.",
             "- Supported action types: cd, mkdir, write_file.",
-            "- For write_file, include the full file path relative to the workspace and the exact content to write.",
-            "- If no local action is needed, return a JSON object with requiresAction=false.",
-            "- Return JSON only. No markdown fences. No explanation.",
+            "- For write_file, include the file path relative to the workspace and the exact content to write.",
+            "- If the user asks to create a folder but gives no name, use path \"new-folder\".",
+            "- If the user asks to create a file but gives no name, use path \"new-file.txt\".",
+            "- If the user asks for a Python file without a name, use path \"main.py\".",
+            "- If the user includes a greeting plus an action, still return an action plan.",
+            "- If no local action is needed, return a JSON object with requiresAction=false and no actions.",
+            "- Return valid JSON only. No markdown fences. No explanation. No extra words.",
             string.Empty,
             $"Workspace root: {workspaceRoot}",
             $"Current directory: {currentDirectory}",
             string.Empty,
             "Return one of these shapes:",
             "{\"requiresAction\":false,\"summary\":\"\"}",
+            "{\"requiresAction\":true,\"summary\":\"Created a folder.\",\"actions\":[{\"type\":\"mkdir\",\"path\":\"new-folder\"}]}",
             "{\"requiresAction\":true,\"summary\":\"short summary\",\"actions\":[{\"type\":\"mkdir\",\"path\":\"demo\"},{\"type\":\"write_file\",\"path\":\"demo/hello.py\",\"content\":\"print('Hello, world!')\"}]}",
             string.Empty,
             "User request:",
@@ -91,6 +96,13 @@ public static class AiActionPlanner
             {
                 trimmed = trimmed[(newLineIndex + 1)..].Trim();
             }
+        }
+
+        var objectStart = trimmed.IndexOf('{');
+        var objectEnd = trimmed.LastIndexOf('}');
+        if (objectStart >= 0 && objectEnd > objectStart)
+        {
+            trimmed = trimmed[objectStart..(objectEnd + 1)];
         }
 
         try

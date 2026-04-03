@@ -166,6 +166,8 @@ internal static class Program
             case "/ls":
                 HandleListFiles(tokens, config);
                 return false;
+            case "/cd":
+                return await HandleChangeDirectoryAsync(tokens, config, configManager).ConfigureAwait(false);
             case "/read":
                 HandleReadFile(tokens, config);
                 return false;
@@ -437,16 +439,30 @@ internal static class Program
         WriteInfo($"retries={config.MaxRetriesPerKey}");
         return false;
     }
-    private static async Task<string?> TryHandleLocalActionAsync(string input, AppConfig config, ConfigManager configManager)
+    private static async Task<string?> TryHandleLocalActionAsync(string input, AppConfig config, KeyManager keyManager, ConfigManager configManager, IAppLogger logger)
     {
-        var result = await LocalActionInterpreter.TryExecuteAsync(
+        var selection = ResolveSelection(config, null, null);
+        var provider = CreateProvider(config, selection.Provider, selection.Model, keyManager, logger);
+        var history = GetCurrentHistory(config).Select(static message => message.Clone()).ToList();
+
+        var result = await AiActionPlanner.TryExecuteAsync(
             input,
+            WorkspaceRoot,
             GetCurrentDirectoryFullPath(config),
+            history,
+            provider,
             rawPath => ResolveWorkspacePath(config, rawPath),
-            directory => UpdateCurrentWorkingDirectory(config, directory)).ConfigureAwait(false);
+            directory => UpdateCurrentWorkingDirectory(config, directory),
+            CancellationToken.None).ConfigureAwait(false);
 
         if (!string.IsNullOrWhiteSpace(result))
         {
+            var currentHistory = GetCurrentHistory(config);
+            currentHistory.Add(new ChatMessage { Role = "user", Content = input, Timestamp = DateTimeOffset.UtcNow });
+            currentHistory.Add(new ChatMessage { Role = "assistant", Content = result, Timestamp = DateTimeOffset.UtcNow });
+            config.ActiveProvider = selection.Provider;
+            config.ActiveModel = selection.Model;
+            SyncCurrentSession(config);
             await configManager.SaveAsync(config).ConfigureAwait(false);
         }
 
@@ -660,6 +676,19 @@ internal static class Program
 
     private static async Task SendPromptAsync(string prompt, string? providerOverride, string? modelOverride, AppConfig config, KeyManager keyManager, ConfigManager configManager, IAppLogger logger)
     {
+        if (string.IsNullOrWhiteSpace(providerOverride) && string.IsNullOrWhiteSpace(modelOverride))
+        {
+            var localActionResult = await TryHandleLocalActionAsync(prompt, config, keyManager, configManager, logger).ConfigureAwait(false);
+            if (!string.IsNullOrWhiteSpace(localActionResult))
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.Write($"[{config.ActiveProvider}/{config.ActiveModel}] ");
+                Console.ResetColor();
+                Console.WriteLine(localActionResult);
+                return;
+            }
+        }
+
         var selection = ResolveSelection(config, providerOverride, modelOverride);
         var provider = CreateProvider(config, selection.Provider, selection.Model, keyManager, logger);
         var history = GetCurrentHistory(config).Select(static message => message.Clone()).ToList();
