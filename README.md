@@ -1,4 +1,4 @@
-# AIConsoleApp
+﻿# AIConsoleApp
 
 Alpha version of an interactive AI console for C# / .NET 8 with a Claude Code-style workflow.
 
@@ -94,9 +94,9 @@ Hello
 create folder demo
 create file demo\hello.py and write there print('Hello, world!')
 go to notes and create file todo.txt with "ship alpha"
-создай папку temp
-создай файл temp\hello.py и впиши туда print('Hello, world!')
-перейди в notes
+create folder temp
+create file temp\hello.py and write there print('Hello, world!')
+go to notes
 ```
 
 ## Notes
