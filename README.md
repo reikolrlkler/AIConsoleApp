@@ -1,15 +1,15 @@
 ﻿# AIConsoleApp
 
-Alpha version of an interactive AI console for C# / .NET 8 with a Claude Code-style workflow.
+Interactive AI console for C# / .NET 8 with a Claude Code-style workflow.
 
 ## Status
 
-Current stage: alpha.
+Current stage: stable.
 
-What already works:
+What is included:
 
-- interactive chat;
-- key management with rotation and fallback;
+- interactive multi-provider chat;
+- API key management with rotation and fallback;
 - model switching, live model discovery, and per-request overrides;
 - shared system prompt for cleaner CLI-style replies;
 - first-run language selection with saved preference;
@@ -20,6 +20,7 @@ What already works:
 - JSON and Markdown chat export;
 - `/doctor` environment and config diagnostics;
 - config persistence in `%APPDATA%/AIConsole/config.json`;
+- improved console shell UI inspired by modern coding CLIs;
 - file logging, self-contained Windows publishing, and basic automated tests.
 
 ## Providers
@@ -109,5 +110,4 @@ go to notes
 - You can override the Qwen endpoint through `AICONSOLE_QWEN_BASE_URL`.
 - You can override the Ollama endpoint through `AICONSOLE_OLLAMA_BASE_URL`.
 - Logs are written to `%APPDATA%/AIConsole/logs/`.
-- Workspace file commands and local natural-language actions are limited to the current workspace for safety.
-- This project is currently alpha and is not positioned as fully production-hardened for every external API.
+- Workspace file commands and AI-driven local actions are limited to the current workspace for safety.
