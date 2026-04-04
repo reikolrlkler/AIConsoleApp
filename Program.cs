@@ -28,9 +28,7 @@ internal static class Program
         {
             var text = ConsoleText.For(config.Language);
 
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.Write($"{config.ActiveProvider}/{config.ActiveModel}:{config.CurrentSessionName}> ");
-            Console.ResetColor();
+            ConsoleUi.WritePrompt(config);
 
             var input = Console.ReadLine();
             if (input is null)
@@ -681,10 +679,9 @@ internal static class Program
             var localActionResult = await TryHandleLocalActionAsync(prompt, config, keyManager, configManager, logger).ConfigureAwait(false);
             if (!string.IsNullOrWhiteSpace(localActionResult))
             {
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.Write($"[{config.ActiveProvider}/{config.ActiveModel}] ");
-                Console.ResetColor();
-                Console.WriteLine(localActionResult);
+                ConsoleUi.WriteAssistantPrefix(config.ActiveProvider, config.ActiveModel);
+                Console.Write(localActionResult);
+                ConsoleUi.FinishAssistantBlock();
                 return;
             }
         }
@@ -703,9 +700,7 @@ internal static class Program
         Console.CancelKeyPress += handler;
         try
         {
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.Write($"[{selection.Provider}/{selection.Model}] ");
-            Console.ResetColor();
+            ConsoleUi.WriteAssistantPrefix(selection.Provider, selection.Model);
 
             var responseBuilder = new StringBuilder();
             if (config.StreamingEnabled)
@@ -723,7 +718,7 @@ internal static class Program
                 responseBuilder.Append(response);
             }
 
-            Console.WriteLine();
+            ConsoleUi.FinishAssistantBlock();
             var currentHistory = GetCurrentHistory(config);
             currentHistory.Add(new ChatMessage { Role = "user", Content = prompt, Timestamp = DateTimeOffset.UtcNow });
             currentHistory.Add(new ChatMessage { Role = "assistant", Content = responseBuilder.ToString(), Timestamp = DateTimeOffset.UtcNow });
@@ -927,13 +922,7 @@ internal static class Program
     private static void PrintBanner(string configPath, string logDirectory, AppConfig config)
     {
         var text = ConsoleText.For(config.Language);
-        Console.WriteLine(text.BannerTitle);
-        Console.WriteLine($"{text.ConfigLabel}: {configPath}");
-        Console.WriteLine($"{text.LogsLabel}: {logDirectory}");
-        Console.WriteLine($"{text.ActiveLabel}: {config.ActiveProvider}/{config.ActiveModel}");
-        Console.WriteLine($"Session: {config.CurrentSessionName}");
-        Console.WriteLine(text.BannerFooter);
-        Console.WriteLine();
+        ConsoleUi.PrintBanner(text, configPath, logDirectory, config);
     }
 
     private static List<ChatMessage> GetCurrentHistory(AppConfig config)
@@ -999,20 +988,15 @@ internal static class Program
 
     private static void WriteInfo(string message)
     {
-        var previous = Console.ForegroundColor;
-        Console.ForegroundColor = ConsoleColor.DarkCyan;
-        Console.WriteLine(message);
-        Console.ForegroundColor = previous;
+        ConsoleUi.WriteInfo(message);
     }
 
     private static void WriteError(string message)
     {
-        var previous = Console.ForegroundColor;
-        Console.ForegroundColor = ConsoleColor.Red;
-        Console.WriteLine(message);
-        Console.ForegroundColor = previous;
+        ConsoleUi.WriteError(message);
     }
 }
+
 
 
 
