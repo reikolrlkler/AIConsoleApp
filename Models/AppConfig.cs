@@ -4,6 +4,8 @@ public sealed class AppConfig
 {
     public string Language { get; set; } = string.Empty;
 
+    public string RunMode { get; set; } = AppRunMode.Build;
+
     public string ActiveProvider { get; set; } = "openai";
 
     public string ActiveModel { get; set; } = "gpt-5.1";
@@ -29,6 +31,7 @@ public sealed class AppConfig
     public void Normalize()
     {
         Language = string.IsNullOrWhiteSpace(Language) ? string.Empty : Services.AppLanguage.Normalize(Language);
+        RunMode = AppRunMode.Normalize(RunMode);
         ActiveProvider = string.IsNullOrWhiteSpace(ActiveProvider) ? "openai" : ActiveProvider.Trim().ToLowerInvariant();
         ActiveModel = string.IsNullOrWhiteSpace(ActiveModel) ? "gpt-5.1" : ActiveModel.Trim();
         RequestTimeoutSeconds = RequestTimeoutSeconds <= 0 ? 90 : RequestTimeoutSeconds;
@@ -124,4 +127,3 @@ public sealed class AppConfig
         return string.IsNullOrWhiteSpace(name) ? string.Empty : name.Trim();
     }
 }
-

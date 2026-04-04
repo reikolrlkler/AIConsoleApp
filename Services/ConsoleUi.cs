@@ -29,7 +29,7 @@ public static class ConsoleUi
         Console.Clear();
         var width = GetContentWidth();
 
-        WriteTopChrome(width);
+        WriteTopChrome();
         Console.WriteLine();
         WriteCentered("aiconsole", ConsoleColor.Gray, width);
         Console.WriteLine();
@@ -43,11 +43,9 @@ public static class ConsoleUi
         Console.WriteLine();
         WriteShortcutGrid(width);
         Console.WriteLine();
-        WriteStatusLine(text, config, width);
+        WriteStatusLine(config, width);
         WriteMutedCentered(text.BannerFooter, width);
         WriteRule('─', ConsoleColor.DarkGray, width);
-        WriteMutedCentered(TrimMiddle(configPath, width - 4), width);
-        WriteMutedCentered(TrimMiddle(logDirectory, width - 4), width);
         Console.WriteLine();
     }
 
@@ -67,6 +65,16 @@ public static class ConsoleUi
         Console.ResetColor();
     }
 
+    public static void FinishPrompt()
+    {
+        Console.WriteLine();
+        var width = Math.Clamp(GetContentWidth() - 10, 48, 96);
+        var leftPad = Math.Max(0, (GetContentWidth() - width) / 2);
+        var border = new string('─', width - 2);
+        WritePadded(leftPad, ConsoleColor.DarkGray, $"└{border}┘");
+        Console.WriteLine();
+    }
+
     public static void WriteInfo(string message)
     {
         WritePanel("info", message, ConsoleColor.DarkCyan);
@@ -79,9 +87,8 @@ public static class ConsoleUi
 
     public static void WriteAssistantPrefix(string provider, string model)
     {
-        Console.WriteLine();
         var label = $" assistant [{provider}/{model}] ";
-        var width = Math.Clamp(GetContentWidth() - 6, 50, 110);
+        var width = Math.Clamp(GetContentWidth() - 10, 48, 104);
         var leftPad = Math.Max(0, (GetContentWidth() - width) / 2);
         var border = new string('─', Math.Max(2, width - label.Length - 2));
 
@@ -103,14 +110,14 @@ public static class ConsoleUi
     public static void FinishAssistantBlock()
     {
         Console.WriteLine();
-        var width = Math.Clamp(GetContentWidth() - 6, 50, 110);
+        var width = Math.Clamp(GetContentWidth() - 10, 48, 104);
         var leftPad = Math.Max(0, (GetContentWidth() - width) / 2);
         var border = new string('─', width - 2);
         WritePadded(leftPad, ConsoleColor.DarkGray, $"└{border}┘");
         Console.WriteLine();
     }
 
-    private static void WriteTopChrome(int width)
+    private static void WriteTopChrome()
     {
         Console.ForegroundColor = ConsoleColor.Red;
         Console.Write("● ");
@@ -119,7 +126,6 @@ public static class ConsoleUi
         Console.ForegroundColor = ConsoleColor.Green;
         Console.WriteLine("●");
         Console.ResetColor();
-        WriteRule(' ', ConsoleColor.Black, width);
     }
 
     private static void WriteShortcutGrid(int width)
@@ -133,10 +139,11 @@ public static class ConsoleUi
         }
     }
 
-    private static void WriteStatusLine(ConsoleText text, AppConfig config, int width)
+    private static void WriteStatusLine(AppConfig config, int width)
     {
         var parts = new[]
         {
+            $"mode {config.RunMode}",
             $"provider {config.ActiveProvider}",
             $"model {config.ActiveModel}",
             $"session {config.CurrentSessionName}"
@@ -148,7 +155,7 @@ public static class ConsoleUi
     private static void WritePanel(string title, string message, ConsoleColor accent)
     {
         var lines = SplitLines(message);
-        var width = Math.Clamp(GetContentWidth() - 8, 40, 110);
+        var width = Math.Clamp(GetContentWidth() - 12, 44, 104);
         var leftPad = Math.Max(0, (GetContentWidth() - width) / 2);
         var label = $" {title} ";
         var border = new string('─', Math.Max(2, width - label.Length - 2));
@@ -167,8 +174,7 @@ public static class ConsoleUi
             Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.Write("│ ");
             Console.ResetColor();
-            Console.Write(line);
-            Console.WriteLine();
+            Console.WriteLine(line);
         }
 
         Console.Write(new string(' ', leftPad));
@@ -237,23 +243,6 @@ public static class ConsoleUi
         }
     }
 
-    private static string TrimMiddle(string value, int width)
-    {
-        if (string.IsNullOrEmpty(value) || value.Length <= width)
-        {
-            return value;
-        }
-
-        if (width <= 8)
-        {
-            return value[..width];
-        }
-
-        var head = (width - 3) / 2;
-        var tail = width - 3 - head;
-        return $"{value[..head]}...{value[^tail..]}";
-    }
-
     private static IReadOnlyList<string> SplitLines(string message)
     {
         return (message ?? string.Empty)
@@ -263,6 +252,7 @@ public static class ConsoleUi
 
     private static string GetVersionText()
     {
-        return Assembly.GetEntryAssembly()?.GetName().Version?.ToString(3) ?? "0.2.0";
+        return Assembly.GetEntryAssembly()?.GetName().Version?.ToString(3) ?? "1.0.0";
     }
 }
+

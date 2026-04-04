@@ -17,6 +17,12 @@ public sealed class ConsoleText
   /language
   /language set en
   /language set ru
+  /mode
+  /mode set plan
+  /mode set build
+  /mode set autopilot
+  /tools
+  /tool action=grep pattern=TODO path=.
   /addkey provider=openai key=sk-...
   /listkeys
   /delkey provider=openai key=sk-...
@@ -51,18 +57,29 @@ public sealed class ConsoleText
   /doctor
   /exit
 
+Modes:
+  plan       planning/chat only, no AI tool execution from prompts
+  build      manual commands and slash tools, no AI autopilot execution
+  autopilot  allows AI-planned tool execution from normal prompts
+
 Behavior:
   Any line without / is sent to the current active model.
+  In autopilot mode, normal prompts may trigger tool actions before falling back to chat.
+  /tools lists the built-in toolset.
+  /tool runs one tool action directly.
   /model list performs live model refresh where supported and falls back to cached results.
-  /doctor checks config, sessions, providers, and local environment basics.
-  Simple natural-language local actions like create folder/file and write text are executed before falling back to the AI model.
-  Config, keys, active model, language, and chat history are stored in %APPDATA%\AIConsole\config.json.
-  Request logs are stored in %APPDATA%\AIConsole\logs\."
+  /doctor checks config, sessions, providers, tools, and local environment basics."
         : @"Команды:
   /help
   /language
   /language set en
   /language set ru
+  /mode
+  /mode set plan
+  /mode set build
+  /mode set autopilot
+  /tools
+  /tool action=grep pattern=TODO path=.
   /addkey provider=openai key=sk-...
   /listkeys
   /delkey provider=openai key=sk-...
@@ -97,13 +114,18 @@ Behavior:
   /doctor
   /exit
 
+Режимы:
+  plan       только планирование/чат, без AI-выполнения tools из обычных фраз
+  build      ручные команды и slash-tools, без AI-autopilot выполнения
+  autopilot  разрешает AI-планирование и выполнение tools из обычных фраз
+
 Поведение:
   Любая строка без / отправляется в текущую активную модель.
+  В режиме autopilot обычные фразы могут запускать tools до обычного ответа модели.
+  /tools показывает встроенный набор инструментов.
+  /tool напрямую запускает одно действие инструмента.
   /model list делает live refresh моделей там, где это поддерживается, и использует кэш при недоступности API.
-  /doctor проверяет конфиг, сессии, провайдеров и базовое локальное окружение.
-  Простые локальные фразы вроде создания папки/файла и записи текста выполняются до отправки запроса в модель.
-  Конфиг, ключи, активная модель, язык и история лежат в %APPDATA%\AIConsole\config.json.
-  Логи запросов и ошибок лежат в %APPDATA%\AIConsole\logs\.";
+  /doctor проверяет конфиг, сессии, провайдеров, tools и базовое локальное окружение.";
 
     public string BannerTitle => "AIConsole for .NET 8";
     public string ConfigLabel => IsEnglish ? "Config" : "Конфиг";
@@ -167,5 +189,3 @@ Behavior:
         return new ConsoleText(language ?? string.Empty);
     }
 }
-
-

@@ -31,6 +31,7 @@ internal static class Program
             ConsoleUi.WritePrompt(config);
 
             var input = Console.ReadLine();
+            ConsoleUi.FinishPrompt();
             if (input is null)
             {
                 await configManager.SaveAsync(config).ConfigureAwait(false);
@@ -128,6 +129,12 @@ internal static class Program
                 return true;
             case "/language":
                 return await HandleLanguageCommandAsync(tokens, config, configManager).ConfigureAwait(false);
+            case "/mode":
+                return await HandleModeCommandAsync(tokens, config, configManager).ConfigureAwait(false);
+            case "/tools":
+                return HandleToolsCommand();
+            case "/tool":
+                return await HandleToolCommandAsync(tokens, config, configManager, logger).ConfigureAwait(false);
             case "/clear":
                 GetCurrentHistory(config).Clear();
                 SyncCurrentSession(config);
@@ -181,6 +188,57 @@ internal static class Program
             default:
                 throw new InvalidOperationException(text.UnknownCommand(tokens[0]));
         }
+    }
+
+    private static async Task<bool> HandleModeCommandAsync(IReadOnlyList<string> tokens, AppConfig config, ConfigManager configManager)
+    {
+        if (tokens.Count == 1)
+        {
+            WriteInfo($"mode={config.RunMode}");
+            return false;
+        }
+
+        var requested = tokens.Count >= 3 && string.Equals(tokens[1], "set", StringComparison.OrdinalIgnoreCase)
+            ? tokens[2]
+            : tokens[1];
+
+        config.RunMode = AppRunMode.Normalize(requested);
+        await configManager.SaveAsync(config).ConfigureAwait(false);
+        WriteInfo($"mode={config.RunMode}");
+        return false;
+    }
+
+    private static bool HandleToolsCommand()
+    {
+        Console.WriteLine(ToolExecutor.FormatToolList());
+        return false;
+    }
+
+    private static async Task<bool> HandleToolCommandAsync(IReadOnlyList<string> tokens, AppConfig config, ConfigManager configManager, IAppLogger logger)
+    {
+        var args = CommandTokenizer.ParseNamedArguments(tokens.Skip(1));
+        if (!args.TryGetValue("action", out var action))
+        {
+            throw new InvalidOperationException("Usage: /tool action=grep pattern=TODO path=.");
+        }
+
+        var result = await ToolExecutor.ExecuteNamedActionAsync(
+            action,
+            args.Where(pair => !string.Equals(pair.Key, "action", StringComparison.OrdinalIgnoreCase)).ToDictionary(static pair => pair.Key, static pair => pair.Value, StringComparer.OrdinalIgnoreCase),
+            WorkspaceRoot,
+            GetCurrentDirectoryFullPath(config),
+            rawPath => ResolveWorkspacePath(config, rawPath),
+            directory => UpdateCurrentWorkingDirectory(config, directory),
+            CancellationToken.None).ConfigureAwait(false);
+
+        if (!string.IsNullOrWhiteSpace(result))
+        {
+            await logger.InfoAsync($"tool action executed: {action}").ConfigureAwait(false);
+            WriteInfo(result);
+            await configManager.SaveAsync(config).ConfigureAwait(false);
+        }
+
+        return false;
     }
 
     private static async Task<bool> HandleLanguageCommandAsync(IReadOnlyList<string> tokens, AppConfig config, ConfigManager configManager)
@@ -439,6 +497,11 @@ internal static class Program
     }
     private static async Task<string?> TryHandleLocalActionAsync(string input, AppConfig config, KeyManager keyManager, ConfigManager configManager, IAppLogger logger)
     {
+        if (!string.Equals(config.RunMode, AppRunMode.Autopilot, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
         var selection = ResolveSelection(config, null, null);
         var provider = CreateProvider(config, selection.Provider, selection.Model, keyManager, logger);
         var history = GetCurrentHistory(config).Select(static message => message.Clone()).ToList();
@@ -996,6 +1059,10 @@ internal static class Program
         ConsoleUi.WriteError(message);
     }
 }
+
+
+
+
 
 
 

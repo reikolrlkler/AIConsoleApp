@@ -1,4 +1,4 @@
-using AIConsoleApp.Models;
+﻿using AIConsoleApp.Models;
 using AIConsoleApp.Services;
 using Xunit;
 
@@ -13,7 +13,7 @@ public sealed class AiActionPlannerTests
         Directory.CreateDirectory(root);
         try
         {
-            var json = "{\"requiresAction\":true,\"summary\":\"done\",\"actions\":[{\"type\":\"mkdir\",\"path\":\"demo\"},{\"type\":\"write_file\",\"path\":\"demo/hello.py\",\"content\":\"print('Hello, world!')\"}]}";
+            var json = "{\"requiresAction\":true,\"summary\":\"done\",\"actions\":[{\"action\":\"mkdir\",\"args\":{\"path\":\"demo\"}},{\"action\":\"write_file\",\"args\":{\"path\":\"demo/hello.py\",\"content\":\"print('Hello, world!')\"}}]}";
             var provider = new FakeProvider(json);
             var history = new List<ChatMessage>();
             var currentDirectory = root;
@@ -42,7 +42,7 @@ public sealed class AiActionPlannerTests
         Directory.CreateDirectory(root);
         try
         {
-            var response = "Here is the plan: {\"requiresAction\":true,\"summary\":\"Created a folder.\",\"actions\":[{\"type\":\"mkdir\",\"path\":\"new-folder\"}]} done.";
+            var response = "Here is the plan: {\"requiresAction\":true,\"summary\":\"Created a folder.\",\"actions\":[{\"action\":\"mkdir\",\"args\":{\"path\":\"new-folder\"}}]} done.";
             var provider = new FakeProvider(response);
             var history = new List<ChatMessage>();
             var currentDirectory = root;

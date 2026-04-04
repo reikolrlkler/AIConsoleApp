@@ -13,13 +13,15 @@ What is included:
 - model switching, live model discovery, and per-request overrides;
 - shared system prompt for cleaner CLI-style replies;
 - first-run language selection with saved preference;
+- three operating modes: `plan`, `build`, and `autopilot`;
 - runtime controls for streaming, timeout, and retries;
 - multi-chat sessions with switching and deletion;
 - file and workspace commands such as `/pwd`, `/cd`, `/ls`, `/read`, `/mkdir`, and `/write`;
-- AI-driven workspace actions for creating folders, creating files, writing text, and changing the working directory from regular prompts;
+- AI-driven workspace actions for creating folders, creating files, writing text, searching files, fetching URLs, running commands, and changing the working directory from regular prompts in `autopilot` mode;
+- a built-in tool system with 20+ actions;
 - JSON and Markdown chat export;
 - `/doctor` environment and config diagnostics;
-- config persistence in `%APPDATA%/AIConsole/config.json`;
+- persistent config and chat history;
 - improved console shell UI inspired by modern coding CLIs;
 - file logging, self-contained Windows publishing, and basic automated tests.
 
@@ -62,11 +64,31 @@ dotnet publish -c Release -r win-x64 --self-contained true -o publish/win-x64-se
 dotnet test AIConsoleApp.Tests/AIConsoleApp.Tests.csproj
 ```
 
+## Modes
+
+- `plan` - planning/chat only, no AI tool execution from regular prompts
+- `build` - manual slash commands and direct tool commands, no AI autopilot execution
+- `autopilot` - allows AI-planned tool execution from normal prompts
+
+## Tool Actions
+
+Built-in tools include:
+
+- `pwd`, `cd`, `ls`, `glob`, `grep`
+- `read_file`, `write_file`, `append_file`
+- `mkdir`, `move`, `copy`, `delete_file`, `delete_dir`, `stat`
+- `fetch`, `web_search`
+- `shell`
+- `npm_install`, `npm_uninstall`, `npm_run`
+- `pip_install`, `pip_uninstall`
+- `dotnet_restore`, `dotnet_build`, `dotnet_test`, `dotnet_publish`
+
 ## Quick Start
 
 ```text
 /addkey provider=google key=AIza...
 /model set provider=google model=gemini-2.5-flash
+/mode set autopilot
 /doctor
 Hello
 ```
@@ -74,6 +96,14 @@ Hello
 ## Useful Commands
 
 ```text
+/mode
+/mode set plan
+/mode set build
+/mode set autopilot
+/tools
+/tool action=grep pattern=TODO path=.
+/tool action=fetch url=https://example.com
+/tool action=dotnet_build
 /pwd
 /cd notes
 /stream off
@@ -89,15 +119,14 @@ Hello
 /savemd chat.md
 ```
 
-## Natural Actions
+## Natural Autopilot Examples
 
 ```text
-create folder demo
-create file demo\hello.py and write there print('Hello, world!')
-go to notes and create file todo.txt with "ship alpha"
-create folder temp
-create file temp\hello.py and write there print('Hello, world!')
-go to notes
+search the project for TODO comments
+find Program.cs and read it
+fetch https://example.com
+run dotnet build
+create folder demo and write hello.py with print('Hello, world!')
 ```
 
 ## Notes
@@ -105,9 +134,8 @@ go to notes
 - The built-in model catalog has been refreshed with newer families such as GPT-5.x, Claude 4, Gemini 2.5/3, newer Cohere models, and more recent Groq options.
 - `/model list` is not limited to the static catalog: it performs live refresh through provider APIs where supported and stores discovered model IDs in config.
 - The static catalog is intended as a good starting point and alias list, not the only source of truth.
-- Regular prompts can trigger AI-planned local workspace actions before falling back to a normal chat response.
+- Regular prompts can trigger AI-planned tool actions only in `autopilot` mode.
 - OpenAI, Anthropic, and Google use official SDKs. Other providers use compatible REST APIs.
 - You can override the Qwen endpoint through `AICONSOLE_QWEN_BASE_URL`.
 - You can override the Ollama endpoint through `AICONSOLE_OLLAMA_BASE_URL`.
-- Logs are written to `%APPDATA%/AIConsole/logs/`.
-- Workspace file commands and AI-driven local actions are limited to the current workspace for safety.
+- Workspace file tools are limited to the current workspace for safety.
